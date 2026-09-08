@@ -1,0 +1,9 @@
+.claude/
+.workbuddy/
+flow/
+video/
+assets-src/
+tools/
+*.log
+*.tmp
+
