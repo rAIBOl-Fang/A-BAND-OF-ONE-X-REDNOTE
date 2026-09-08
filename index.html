@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>A Band of One · 一个人的乐队</title>
+<style>
+  :root {
+    --bg:#0d0f17; --panel:rgba(255,255,255,.045); --line:rgba(255,255,255,.09);
+    --txt:#e8ecf5; --sub:#8a93a8; --red:#ff4d5e; --blue:#4da3ff; --gold:#ffd257; --violet:#8b7bff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
+  body {
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    display:flex; justify-content:center;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation; overflow:hidden;
+  }
+  button { font-family:inherit; color:inherit; border:none; background:none; cursor:pointer; touch-action:none; }
+
+  #app {
+    position:relative; width:100%; max-width:520px; height:100vh; height:100dvh;
+    display:flex; flex-direction:column;
+    padding:10px 14px;padding:calc(10px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));
+  }
+  header h1 { font-size:15px; letter-spacing:2px; font-weight:800; }
+  header h1 span { color:var(--sub); font-weight:500; letter-spacing:0; font-size:12px; margin-left:8px; }
+  #status { font-size:12px; color:var(--sub); min-height:17px; margin-top:4px; }
+
+  #stage {
+    position:relative; overflow:hidden;
+    flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:18px; background:var(--panel); padding:14px;
+  }
+  #fx { position:absolute; top:0; right:0; bottom:0; left:0; width:100%; height:100%; pointer-events:none; }
+  #nowNote, #meta { position:relative; z-index:1; }
+  #nowNote {
+    font-size:56px;font-size:clamp(52px, 17vw, 84px); font-weight:900; line-height:1; color:var(--sub);
+    animation:breathe 2.4s ease-in-out infinite;
+  }
+  #nowNote.played { color:var(--gold); text-shadow:0 0 22px rgba(255,210,87,.5); animation:none; }
+  @keyframes breathe { 0%,100% { opacity:.45; } 50% { opacity:1; } }
+  #meta { display:flex; }
+  .tag { font-size:13px; color:var(--sub); background:rgba(255,255,255,.05); border:1px solid var(--line);
+         padding:5px 12px; border-radius:999px; }
+  .tag b { color:var(--txt); }
+
+  #controls { display:flex; }
+  .ctl {
+    flex:0 0 auto; min-width:78px; padding:13px 0;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    color:var(--sub); font-size:14px; font-weight:700;
+  }
+  .ctl:active { background:rgba(255,255,255,.1); }
+  #btnFollow {
+    flex:1; padding:13px 0; border-radius:14px; font-size:16px; font-weight:800; color:#fff;
+    background:linear-gradient(180deg,#8b7bff,#6a4fe0); box-shadow:0 4px 18px rgba(106,79,224,.35);
+  }
+  #btnFollow:active { transform:translateY(1px); }
+
+  #keysRow { display:flex; height:200px;height:clamp(150px, 26vh, 230px); }
+  .pk {
+    flex:1; position:relative; border-radius:12px 12px 16px 16px;
+    background:linear-gradient(180deg,#f7f9ff,#d9dfec); color:#23283a;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    padding-bottom:12px;
+    box-shadow:inset 0 -5px 0 rgba(35,40,58,.14);
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  .pk b { font-size:19px; font-weight:800; }
+  .pk span { font-size:10px; color:#7a8199; }
+  .pk.pressed { transform:translateY(2px); background:linear-gradient(180deg,#fff6d8,#ffe9a8);
+                box-shadow:0 0 18px rgba(255,210,87,.55), inset 0 -5px 0 rgba(160,120,20,.25); }
+  .pk.s8 {
+    flex:0 0 13%;
+    background:linear-gradient(180deg,#b7aaff,#8b7bff);
+    box-shadow:inset 0 -5px 0 rgba(60,40,160,.35);
+  }
+  .pk.s8 b { font-size:14px; color:#1c1250; }
+  .pk.s8 span { color:rgba(28,18,80,.65); }
+  .pk.s8.pressed { background:linear-gradient(180deg,#d3caff,#a795ff); box-shadow:0 0 18px rgba(139,123,255,.6); }
+
+  /* ---------- 跟随模式：HUD / 谱面条 / 判定键态 ---------- */
+  #hud { display:flex; align-items:center; flex-wrap:wrap; }
+  #hud .tag { font-size:12px; padding:4px 10px; }
+  #btnStop { margin-left:auto; padding:7px 14px; border-radius:10px; background:rgba(255,77,94,.15);
+             border:1px solid rgba(255,77,94,.4); color:var(--red); font-weight:700; font-size:13px; }
+  #sheetWrap { overflow:hidden; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid var(--line); }
+  #sheet { display:flex; align-items:flex-end; overflow-x:auto; padding:8px 6px; scrollbar-width:none;
+           -webkit-overflow-scrolling:touch; touch-action:pan-x; }
+  #sheet::-webkit-scrollbar { display:none; }
+  .sb { flex:0 0 auto; height:30px; border-radius:7px; background:rgba(255,255,255,.06);
+        display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--sub); }
+  .sb.done { background:rgba(77,163,255,.14); color:rgba(77,163,255,.7); }
+  .sb.cur { border:1px solid var(--red); color:var(--red); font-weight:800; box-shadow:0 0 10px rgba(255,77,94,.3); }
+  .sb.sounding { border-color:var(--blue); color:var(--blue); box-shadow:0 0 10px rgba(77,163,255,.4); }
+  .pk.hint { background:linear-gradient(180deg,#ffb3bb,#ff7c89);
+             box-shadow:0 0 22px rgba(255,77,94,.6), inset 0 -5px 0 rgba(160,20,35,.25);
+             animation:hintPulse 1s ease-in-out infinite; }
+  .pk.hint b, .pk.hint span { color:#5c0d16; }
+  .pk.hit { background:linear-gradient(180deg,#9ecdff,#57a4ff);
+            box-shadow:0 0 24px rgba(77,163,255,.7), inset 0 -5px 0 rgba(20,70,140,.3); }
+  .pk.hit b, .pk.hit span { color:#0b2c55; }
+  .pk.err { background:linear-gradient(180deg,#ff6b6b,#d92c2c); animation:shake .3s; }
+  .pk.err b, .pk.err span { color:#fff; }
+  @keyframes hintPulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
+  @keyframes shake { 0%,100% { transform:translateX(0); } 30% { transform:translateX(-4px); } 60% { transform:translateX(4px); } }
+  #nowNote.nowHint { color:var(--red); text-shadow:0 0 24px rgba(255,77,94,.75); animation:hintPulse 1s ease-in-out infinite; }
+  #nowNote.nowHit { color:var(--blue); text-shadow:0 0 26px rgba(77,163,255,.85); animation:none; }
+
+  /* ---------- 底部选谱面板与曲终卡 ---------- */
+  .overlay { position:absolute; top:0; right:0; bottom:0; left:0; z-index:20; background:rgba(10,12,20,.72);
+             backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+             display:flex; align-items:flex-end; }
+  .fsCard { width:100%; background:#161a26; border:1px solid var(--line); border-radius:22px 22px 0 0;
+            padding:18px 18px calc(18px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; }
+  .fsTitle { font-size:15px; font-weight:800; }
+  .songBtn { width:100%; text-align:left; padding:14px; border-radius:14px; background:rgba(255,255,255,.05);
+             border:1px solid var(--line); font-size:15px; font-weight:700; color:var(--txt); }
+  .songBtn span { display:block; font-size:12px; color:var(--sub); font-weight:500; margin-top:2px; }
+  .songBtn:active { background:rgba(139,123,255,.15); }
+  .ghost { background:rgba(255,255,255,.06); color:var(--sub); border:1px solid var(--line); }
+  #finOverlay { align-items:center; justify-content:center; }
+  .finCard { width:min(320px, 86%); background:#161a26; border:1px solid rgba(255,210,87,.35); border-radius:20px;
+             padding:22px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .finTitle { font-size:17px; font-weight:800; color:var(--gold); }
+  #finStats { font-size:19px; font-weight:800; }
+  #finBest { font-size:12px; color:var(--sub); min-height:15px; }
+  #finOverlay button { width:100%; padding:13px; border-radius:13px; font-size:15px; font-weight:800; }
+  #btnAgain { background:linear-gradient(180deg,#ff5f6f,#e63e50); color:#fff; }
+  #btnBack { background:rgba(255,255,255,.06); color:var(--sub); border:1px solid var(--line); }
+  .hide { display:none !important; }
+
+  #diag {
+    position:absolute; top:0; left:0; right:0; z-index:60; display:none;
+    background:#b3261e; color:#fff; font-size:15px; font-weight:800;
+    padding:10px 8px; text-align:center; line-height:1.4;
+  }
+  /* —— Chrome 61 基线：flex 间距用兄弟 margin（规范 css-compatibility §3） —— */
+  #app > * + * { margin-top:10px; }
+  #stage > * + * { margin-top:12px; }
+  #meta > * + * { margin-left:10px; }
+  #controls > * + * { margin-left:10px; }
+  #hud > * + * { margin-left:6px; }
+  .pk + .pk { margin-left:7px; }
+  .fsCard > * + * { margin-top:12px; }
+  .finCard > * + * { margin-top:10px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="diag"></div>
+  <header>
+    <h1>A BAND OF ONE<span>一个人的乐队</span></h1>
+    <div id="status">点琴键即弹 · S8 换音色 · 音区随时可调</div>
+  </header>
+
+  <section id="stage">
+    <canvas id="fx"></canvas>
+    <div id="nowNote">♪</div>
+    <div id="meta">
+      <span class="tag">音色 <b id="instName">钢琴</b></span>
+      <span class="tag">音区 <b id="regName">中 · do=C4</b></span>
+    </div>
+  </section>
+
+  <section id="controls">
+    <button id="btnOctDown" class="ctl" type="button">− 八度</button>
+    <button id="btnFollow" type="button">🎵 跟随模式</button>
+    <button id="btnOctUp" class="ctl" type="button">＋ 八度</button>
+  </section>
+
+  <section id="hud" class="hide">
+    <span class="tag">曲目 <b id="hudSong">—</b></span>
+    <span class="tag">进度 <b id="hudProg">0/0</b></span>
+    <span class="tag">弹错 <b id="hudErr">0</b></span>
+    <span class="tag">用时 <b id="hudTime">0.0s</b></span>
+    <button id="btnStop" type="button">■ 停止</button>
+  </section>
+  <div id="sheetWrap" class="hide"><div id="sheet"></div></div>
+
+  <section id="keysRow"></section>
+
+  <div id="followSheet" class="overlay hide">
+    <div class="fsCard">
+      <div class="fsTitle">🎵 选择要跟随的谱子</div>
+      <div id="songList" style="display:flex;flex-direction:column;"></div>
+      <button id="btnFsCancel" class="songBtn ghost" type="button">取消，继续自由弹</button>
+    </div>
+  </div>
+  <div id="finOverlay" class="overlay hide">
+    <div class="finCard">
+      <div class="finTitle">🎉 本曲完成</div>
+      <div id="finStats">弹错 0 次 · 用时 0.0 秒</div>
+      <div id="finBest"></div>
+      <button id="btnAgain" type="button">↻ 再来一次</button>
+      <button id="btnBack" type="button">☰ 回到自由弹</button>
+    </div>
+  </div>
+</div>
+<script src="./audio-data.js"></script>
+<script src="./fx.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
