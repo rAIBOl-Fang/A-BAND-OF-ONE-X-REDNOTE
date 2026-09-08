@@ -5,11 +5,10 @@
 ## 项目演示视频
 
 <!--
-视频将通过 GitHub Issue 媒体附件接入。上传后把下一行替换为真实的
-https://github.com/user-attachments/assets/... 地址，并保持该地址单独成段，GitHub 才会渲染为播放器。
+视频由 GitHub Issue 媒体附件承载，地址保持单独成段以便 GitHub 渲染播放器。
 -->
 
-https://github.com/user-attachments/assets/<uploaded-video-id>
+https://github.com/user-attachments/assets/315bc234-2760-4b3c-a9b9-ffb1bb3f6ad5
 
 ## 电脑端快速开始
 
